@@ -33,13 +33,14 @@ sprawdzic czy delay dziala w interrupcie
 
 #define INTERRUPT_PIN 2
 
-unsigned int dimming = 134;  // Dimming level (0-128)  0 = ON, 128 = OFF | najniższy poziom, do którego się ściemnia | im więcej tym ciemniej
+unsigned int dimtime;
+unsigned int dimming = 140;  // Dimming level (0-128)  0 = ON, 128 = OFF | najniższy poziom, do którego się ściemnia | im więcej tym ciemniej
 unsigned int dimmingMax = dimming;
-unsigned int dimmingMin = 80; //50 has the brightest light| najwyższy poziom, do którego się rozjaśnia | im mniej tym jaśniej
+unsigned int dimmingMin = 40; //50 has the brightest light| najwyższy poziom, do którego się rozjaśnia | im mniej tym jaśniej
 unsigned int animationTime = 20;
 unsigned int us = 75;
 unsigned int bulbPinNumber;
-unsigned int animationType = 4;
+unsigned int animationType = 2;
 
 
 
@@ -75,12 +76,14 @@ void zeroCrosssInterrupt() {
    * 9990 / 40 = 249 us
    * 
    */
-
-  unsigned int dimtime = (us*dimming);    // For 60Hz => 65    
-  //unsigned int dimtime = 8000;
+// 3000 najjasniej
+// 10500 najciemniej
+  
+  dimtime = (us*dimming);    // For 60Hz => 65    
+  //dimtime = 10500; 
   delayMicroseconds(dimtime);    // Wait till firing the TRIAC  
 
-  if (animationType == 1 || animationType == 4) {
+  if (animationType == 1 || animationType == 4 || animationType == 5 || animationType == 6) {
     digitalWrite(BULB_PIN_1, HIGH);   // Fire the TRIAC
     digitalWrite(BULB_PIN_2, HIGH);
     digitalWrite(BULB_PIN_3, HIGH);
@@ -101,7 +104,7 @@ void zeroCrosssInterrupt() {
 
 void loop()  {
 
-  if (animationType != 4) {
+  if (animationType >= 1  && animationType <= 3) {
   
     for (int i=dimmingMax; i >= dimmingMin; i--) { // rozjasnianie
       dimming = i;
@@ -124,7 +127,14 @@ void loop()  {
         bulbPinNumber = 5;
       }    
     }
-  } else {
+  } else if (animationType == 4) {
     dimming = dimmingMax;
+    delay(animationTime);
+  } else if (animationType == 5) {
+    dimming = dimmingMax / 2;
+    delay(animationTime);
+  } else if (animationType == 6) {
+    dimming = dimmingMax / 1.2;
+    delay(animationTime);
   }
 }
