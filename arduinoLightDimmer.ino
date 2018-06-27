@@ -34,7 +34,11 @@ void setup() {
   digitalWrite(BULB_PIN_2, LOW);
   digitalWrite(BULB_PIN_3, LOW);
   
-  attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), zeroCrosssInterrupt, RISING);
+  attachInterrupt(
+    digitalPinToInterrupt(INTERRUPT_PIN), 
+    zeroCrosssInterrupt,
+    RISING
+  );
 
   if (animationType == 2) {
     bulbPinNumber = 4;
