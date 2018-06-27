@@ -4,15 +4,14 @@
 
 #define INTERRUPT_PIN 2
 
+const byte us = 75;
 unsigned int dimtime;
-unsigned int start;
-unsigned int dimming = 149;  // 140 |  Dimming level (0-128)  0 = ON, 128 = OFF | najniższy poziom, do którego się ściemnia | im więcej tym ciemniej
-unsigned int dimmingMax = dimming;
-unsigned int dimmingMin = 50; //50 has the brightest light| najwyższy poziom, do którego się rozjaśnia | im mniej tym jaśniej
+byte dimming = 149;  // 140 |  Dimming level (0-128)  0 = ON, 128 = OFF | najniższy poziom, do którego się ściemnia | im więcej tym ciemniej
+byte dimmingMax = dimming;
+byte dimmingMin = 50; //50 has the brightest light| najwyższy poziom, do którego się rozjaśnia | im mniej tym jaśniej
 unsigned int animationTime = 100;
-unsigned int us = 75;
-unsigned int bulbPinNumber;
-unsigned int animationType = 4;
+byte bulbPinNumber;
+const byte animationType = 4;
 boolean triggerFlag = true;
 
 /*
