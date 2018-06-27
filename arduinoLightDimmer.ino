@@ -1,48 +1,27 @@
-/*
-
-AC Voltage dimmer with Zero cross detection
-Author: Charith Fernanado Adapted by DIY_bloke
-License: Creative Commons Attribution Share-Alike 3.0 License.
-Attach the Zero cross pin of the module to Arduino External Interrupt pin
-Select the correct Interrupt # from the below table 
-(the Pin numbers are digital pins, NOT physical pins: 
-digital pin 2 [INT0]=physical pin 4 and digital pin 3 [INT1]= physical pin 5)
-check: <a href="http://arduino.cc/en/Reference/attachInterrupt">interrupts</a>
-
-Pin    |  Interrrupt # | Arduino Platform
----------------------------------------
-2      |  0            |  All -But it is INT1 on the Leonardo
-3      |  1            |  All -But it is INT0 on the Leonardo
-18     |  5            |  Arduino Mega Only
-19     |  4            |  Arduino Mega Only
-20     |  3            |  Arduino Mega Only
-21     |  2            |  Arduino Mega Only
-0      |  0            |  Leonardo
-1      |  3            |  Leonardo
-7      |  4            |  Leonardo
-The Arduino Due has no standard interrupt pins as an iterrupt can be attached to almosty any pin. 
-
-In the program pin 2 is chosen
-
-sprawdzic czy delay dziala w interrupcie
- poczytac o interruptach
-*/
-#define BULB_PIN_1 3
-#define BULB_PIN_2 4
-#define BULB_PIN_3 5
+#define BULB_PIN_1 4
+#define BULB_PIN_2 5
+#define BULB_PIN_3 6
 
 #define INTERRUPT_PIN 2
 
 unsigned int dimtime;
-unsigned int dimming = 140;  // Dimming level (0-128)  0 = ON, 128 = OFF | najniższy poziom, do którego się ściemnia | im więcej tym ciemniej
+unsigned int start;
+unsigned int dimming = 149;  // 140 |  Dimming level (0-128)  0 = ON, 128 = OFF | najniższy poziom, do którego się ściemnia | im więcej tym ciemniej
 unsigned int dimmingMax = dimming;
-unsigned int dimmingMin = 40; //50 has the brightest light| najwyższy poziom, do którego się rozjaśnia | im mniej tym jaśniej
-unsigned int animationTime = 20;
+unsigned int dimmingMin = 50; //50 has the brightest light| najwyższy poziom, do którego się rozjaśnia | im mniej tym jaśniej
+unsigned int animationTime = 100;
 unsigned int us = 75;
 unsigned int bulbPinNumber;
-unsigned int animationType = 2;
+unsigned int animationType = 4;
+boolean triggerFlag = true;
 
-
+/*
+ * Programy:
+ * 1) Wszystkie powoli się rozjaśniają i ściemniają
+ * 2) Od lewej do prawej pojedyncza żarówka się rozjasnia i ściemnia
+ * 3) Od prawej do lewej pojedyncza żarówka się rozjasnia i ściemnia
+ * 4) Wszystkie powoli się rozjaśniają do pewnego poziomu i utrzymują go
+ */
 
 
 void setup() {
@@ -58,9 +37,9 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), zeroCrosssInterrupt, RISING);
 
   if (animationType == 2) {
-    bulbPinNumber = 3;
+    bulbPinNumber = 4;
   } else if (animationType == 3) {
-    bulbPinNumber = 5;
+    bulbPinNumber = 6;
   }  
 }
 
@@ -76,14 +55,16 @@ void zeroCrosssInterrupt() {
    * 9990 / 40 = 249 us
    * 
    */
-// 3000 najjasniej
-// 10500 najciemniej
+  // 3000 najjasniej
+  // 10500 najciemniej
   
-  dimtime = (us*dimming);    // For 60Hz => 65    
+  dimtime = (us*dimming);    // For 60Hz => 65
+  
   //dimtime = 10500; 
   delayMicroseconds(dimtime);    // Wait till firing the TRIAC  
 
-  if (animationType == 1 || animationType == 4 || animationType == 5 || animationType == 6) {
+  if (animationType == 1 || animationType == 4 ) {
+    
     digitalWrite(BULB_PIN_1, HIGH);   // Fire the TRIAC
     digitalWrite(BULB_PIN_2, HIGH);
     digitalWrite(BULB_PIN_3, HIGH);
@@ -91,10 +72,13 @@ void zeroCrosssInterrupt() {
     digitalWrite(BULB_PIN_1, LOW);    // No longer trigger the TRIAC (the next zero crossing will swith it off)
     digitalWrite(BULB_PIN_2, LOW);
     digitalWrite(BULB_PIN_3, LOW);
+    
   } else if (animationType == 2 || animationType == 3) {
+    
     digitalWrite(bulbPinNumber, HIGH);
     delayMicroseconds(10);
     digitalWrite(bulbPinNumber, LOW);
+  
   }
 
 }
@@ -106,35 +90,39 @@ void loop()  {
 
   if (animationType >= 1  && animationType <= 3) {
   
-    for (int i=dimmingMax; i >= dimmingMin; i--) { // rozjasnianie
+    for (int i=dimmingMax; i>=dimmingMin; i--) { // rozjasnianie
       dimming = i;
       delay(animationTime);
     }
     
-    for (int i=dimmingMin; i <= dimmingMax; i++) { // sciemnianie
+    for (int i=dimmingMin; i<=dimmingMax; i++) { // sciemnianie
       dimming = i;
       delay(animationTime);
     } 
   
     if (animationType == 2) {
       bulbPinNumber++;
-      if (bulbPinNumber > 5) {
-        bulbPinNumber = 3;
+      if (bulbPinNumber > 6) {
+        bulbPinNumber = 4;
       }
     } else if (animationType == 3) {
       bulbPinNumber--;
-      if (bulbPinNumber < 3) {
-        bulbPinNumber = 5;
+      if (bulbPinNumber < 4) {
+        bulbPinNumber = 6;
       }    
     }
+    
   } else if (animationType == 4) {
-    dimming = dimmingMax;
-    delay(animationTime);
-  } else if (animationType == 5) {
-    dimming = dimmingMax / 2;
-    delay(animationTime);
-  } else if (animationType == 6) {
-    dimming = dimmingMax / 1.2;
-    delay(animationTime);
+//Dane:
+//unsigned int dimming = 149;
+//unsigned int animationTime = 100;
+
+    if ( triggerFlag ) {
+      for (int i=dimmingMax; i>=dimmingMax/2; i--) { // rozjasnianie
+        dimming = i;
+        delay(animationTime);
+      }  
+      triggerFlag = false;  
+    }   
   }
 }
