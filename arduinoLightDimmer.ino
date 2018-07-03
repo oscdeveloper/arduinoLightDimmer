@@ -11,7 +11,7 @@ byte dimmingMax = dimming;
 byte dimmingMin = 50; //50 has the brightest light| najwyższy poziom, do którego się rozjaśnia | im mniej tym jaśniej
 unsigned int animationTime = 100;
 byte bulbPinNumber;
-const byte animationType = 4;
+const byte animationType = 1;
 boolean triggerFlag = true;
 
 /*
@@ -58,23 +58,34 @@ void zeroCrosssInterrupt() {
    * 9990 / 40 = 249 us
    * 
    */
-  // 3000 najjasniej
-  // 10500 najciemniej
+  // 500 najjasniej
+  // 8500 najciemniej, ledwo się żarzy
+  // 
   
-  dimtime = (us*dimming);    // For 60Hz => 65
+  //dimtime = (us*dimming);    // For 60Hz => 65
   
-  //dimtime = 10500; 
+  dimtime = 8000; 
   delayMicroseconds(dimtime);    // Wait till firing the TRIAC  
 
   if (animationType == 1 || animationType == 4 ) {
     
-    digitalWrite(BULB_PIN_1, HIGH);   // Fire the TRIAC
-    digitalWrite(BULB_PIN_2, HIGH);
+//    digitalWrite(BULB_PIN_1, HIGH);   // Fire the TRIAC
+//    digitalWrite(BULB_PIN_2, HIGH);
     digitalWrite(BULB_PIN_3, HIGH);
     delayMicroseconds(10);         // triac On propogation delay 
-    digitalWrite(BULB_PIN_1, LOW);    // No longer trigger the TRIAC (the next zero crossing will swith it off)
-    digitalWrite(BULB_PIN_2, LOW);
+//    digitalWrite(BULB_PIN_1, LOW);    // No longer trigger the TRIAC (the next zero crossing will swith it off)
+//    digitalWrite(BULB_PIN_2, LOW);
     digitalWrite(BULB_PIN_3, LOW);
+
+//    delayMicroseconds(1000);
+//    digitalWrite(BULB_PIN_2, HIGH);
+//    delayMicroseconds(10);
+//    digitalWrite(BULB_PIN_2, LOW);
+//
+//    delayMicroseconds(1000);
+//    digitalWrite(BULB_PIN_3, HIGH);
+//    delayMicroseconds(10);
+//    digitalWrite(BULB_PIN_3, LOW);
     
   } else if (animationType == 2 || animationType == 3) {
     
@@ -90,9 +101,9 @@ void zeroCrosssInterrupt() {
 
 
 void loop()  {
-
-  if (animationType >= 1  && animationType <= 3) {
-  
+delay(100);
+//  if (animationType >= 1  && animationType <= 3) {
+  if (animationType == 9) {
     for (int i=dimmingMax; i>=dimmingMin; i--) { // rozjasnianie
       dimming = i;
       delay(animationTime);
