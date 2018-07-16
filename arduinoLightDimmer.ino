@@ -32,6 +32,7 @@ boolean setupMode;
 boolean interruptOnTrigger = true;
 unsigned long currentMillis = 0;
 const long interval = 500;
+volatile int firstTrigger = 0;
 // stop settings
 
 /*
@@ -64,9 +65,7 @@ void setup() {
 
   if ( EEPROMReadlong(memoryAnimationTime) > -1 ) {
     animationTime = EEPROMReadlong(memoryAnimationTime);
-  }    
-
-  Serial.println(EEPROM.read(memoryDimmingMax));
+  }
   
   pinMode(BULB_PIN_1, OUTPUT);
   pinMode(BULB_PIN_2, OUTPUT);
@@ -84,8 +83,7 @@ void loop() {
    
     interruptOff();
 
-    Serial.print("key decode: ");
-    Serial.println(results.value);   
+    //Serial.print("key decode: ");Serial.println(results.value);   
     
     switch (results.value) {
       case 3772784863:
@@ -197,15 +195,24 @@ void zeroCrosssInterrupt() {
   // 8500 najciemniej, ledwo się żarzy
   // 8000 bardzo ciemno, komfortowo dla oczu, ładnie wygląda
 
-if ( bulbPinNumber == INTERRUPT_PIN ) { // zabezpieczenie, gdyby numer pinu wszedł na pin przerwania
-  bulbPinNumber = BULB_PIN_1;
-}
+  if ( bulbPinNumber == INTERRUPT_PIN ) { // zabezpieczenie, gdyby numer pinu wszedł na pin przerwania
+    bulbPinNumber = BULB_PIN_1;
+  }
 
   delayMicroseconds(scaleDivider*dimming);
-//delayMicroseconds(9300);
+   
+  if (firstTrigger > 10) { // usunięcie błysku zaraz po uruchomieniu
+    fireTriac();
+  } else {
+    firstTrigger++;
+  }
+}
 
+
+
+
+void fireTriac() {
   if (animationProgram == 1 || animationProgram == 4) {
-    
     digitalWrite(BULB_PIN_1, HIGH);
     digitalWrite(BULB_PIN_2, HIGH);
     digitalWrite(BULB_PIN_3, HIGH);
@@ -213,13 +220,10 @@ if ( bulbPinNumber == INTERRUPT_PIN ) { // zabezpieczenie, gdyby numer pinu wsze
     digitalWrite(BULB_PIN_1, LOW); 
     digitalWrite(BULB_PIN_2, LOW);
     digitalWrite(BULB_PIN_3, LOW);
-
   } else if (animationProgram == 2 || animationProgram == 3 || animationProgram == 5) {
-    
     digitalWrite(bulbPinNumber, HIGH);
     delayMicroseconds(10);
     digitalWrite(bulbPinNumber, LOW);
-  
   }
 }
 
