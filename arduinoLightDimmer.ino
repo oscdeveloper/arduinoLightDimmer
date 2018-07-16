@@ -14,7 +14,11 @@ decode_results results;
 
 // start settings
 // patrz -> resetSettings()
-int memoryAnimationProgram = 0;
+byte memoryAnimationProgram = 0;
+byte memoryDimmingMax = 1;
+byte memoryDimmingMin = 2;
+byte memoryAnimationTime = 3;
+
 const byte scaleDivider = 62;
 byte dimming = 150;  // Dimming level (8-150)  8 = ON, 150 = OFF | najniższy poziom, do którego się ściemnia | im więcej tym ciemniej
 byte dimmingMax = dimming;
@@ -46,16 +50,29 @@ void setup() {
   Serial.begin(9600);
   irrecv.enableIRIn();
 
-  if ( EEPROM.read(memoryAnimationProgram) > 0 ) {
+  if ( EEPROM.read(memoryAnimationProgram) < 255 ) {
     animationProgram = EEPROM.read(memoryAnimationProgram);
   }
+
+  if ( EEPROM.read(memoryDimmingMax) < 255 ) {
+    dimmingMax = EEPROM.read(memoryDimmingMax);
+  }  
+
+  if ( EEPROM.read(memoryDimmingMin) < 255 ) {
+    dimmingMin = EEPROM.read(memoryDimmingMin);
+  }    
+
+  if ( EEPROMReadlong(memoryAnimationTime) > -1 ) {
+    animationTime = EEPROMReadlong(memoryAnimationTime);
+  }    
+
+  Serial.println(EEPROM.read(memoryDimmingMax));
   
   pinMode(BULB_PIN_1, OUTPUT);
   pinMode(BULB_PIN_2, OUTPUT);
   pinMode(BULB_PIN_3, OUTPUT);
 
   interruptOn();
-  changeBulbPin();
 }
 
 
@@ -110,6 +127,9 @@ void loop() {
     }
 
     EEPROM.write(memoryAnimationProgram, animationProgram);
+    EEPROM.write(memoryDimmingMax, dimmingMax);
+    EEPROM.write(memoryDimmingMin, dimmingMin);
+    EEPROMWritelong(memoryAnimationTime, animationTime);
     
     changeBulbPin();
     irrecv.resume();
@@ -117,8 +137,8 @@ void loop() {
 
   
   if (!setupMode && (millis() - currentMillis >= interval)) {
+    
     interruptOn();  
-//    Serial.println(triggerFlag); 
 
     if (animationProgram >= 1 && animationProgram <= 3 || animationProgram == 5) {
   
@@ -169,13 +189,8 @@ void loop() {
   } // !setupMode
 }
 
-void changeBulbPin() {
-  if (animationProgram == 2 || animationProgram == 5) {
-    bulbPinNumber = 4;
-  } else if (animationProgram == 3 || animationProgram == 6) {
-    bulbPinNumber = 6;
-  }
-}
+
+
 
 void zeroCrosssInterrupt() {
   // 500 najjasniej
@@ -187,8 +202,9 @@ if ( bulbPinNumber == INTERRUPT_PIN ) { // zabezpieczenie, gdyby numer pinu wsze
 }
 
   delayMicroseconds(scaleDivider*dimming);
+//delayMicroseconds(9300);
 
-  if (animationProgram == 1 || animationProgram == 4 ) {
+  if (animationProgram == 1 || animationProgram == 4) {
     
     digitalWrite(BULB_PIN_1, HIGH);
     digitalWrite(BULB_PIN_2, HIGH);
@@ -204,26 +220,25 @@ if ( bulbPinNumber == INTERRUPT_PIN ) { // zabezpieczenie, gdyby numer pinu wsze
     delayMicroseconds(10);
     digitalWrite(bulbPinNumber, LOW);
   
-  } else if (animationProgram == 999) {
-
-    digitalWrite(BULB_PIN_3, HIGH);
-    delayMicroseconds(10);      
-    digitalWrite(BULB_PIN_3, LOW);
-
-    delayMicroseconds(5000);
-    digitalWrite(BULB_PIN_2, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(BULB_PIN_2, LOW);
-
-    delayMicroseconds(1000);
-    digitalWrite(BULB_PIN_1, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(BULB_PIN_1, LOW);
   }
 }
 
+
+
+
+void changeBulbPin() {
+  if (animationProgram == 2 || animationProgram == 5) {
+    bulbPinNumber = 4;
+  } else if (animationProgram == 3 || animationProgram == 6) {
+    bulbPinNumber = 6;
+  }
+}
+
+
+
+
 void interruptOn() {
-  if ( interruptOnTrigger ) {
+  if (interruptOnTrigger) {
     resetSettings();
     attachInterrupt(
       digitalPinToInterrupt(INTERRUPT_PIN), 
@@ -295,3 +310,28 @@ void changeAnimationTime(boolean value) {
   }
 }
 
+void EEPROMWritelong(int address, long value) {
+  //Decomposition from a long to 4 bytes by using bitshift.
+  //One = Most significant -> Four = Least significant byte
+  byte four = (value & 0xFF);
+  byte three = ((value >> 8) & 0xFF);
+  byte two = ((value >> 16) & 0xFF);
+  byte one = ((value >> 24) & 0xFF);
+  
+  //Write the 4 bytes into the eeprom memory.
+  EEPROM.write(address, four);
+  EEPROM.write(address + 1, three);
+  EEPROM.write(address + 2, two);
+  EEPROM.write(address + 3, one);
+}
+
+long EEPROMReadlong(long address) {
+  //Read the 4 bytes from the eeprom memory.
+  long four = EEPROM.read(address);
+  long three = EEPROM.read(address + 1);
+  long two = EEPROM.read(address + 2);
+  long one = EEPROM.read(address + 3);
+
+  //Return the recomposed long by using bitshift.
+  return ((four << 0) & 0xFF) + ((three << 8) & 0xFFFF) + ((two << 16) & 0xFFFFFF) + ((one << 24) & 0xFFFFFFFF);
+}
