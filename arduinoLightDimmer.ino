@@ -13,19 +13,19 @@ IRrecv irrecv(IR_PIN);
 decode_results results;
 
 // start settings
-// patrz -> resetSettings()
+// take a look -> resetSettings()
 byte memoryAnimationProgram = 0;
 byte memoryDimmingMax = 1;
 byte memoryDimmingMin = 2;
 byte memoryAnimationTime = 3;
 
 const byte scaleDivider = 62;
-byte dimming = 150;  // Dimming level (8-150)  8 = ON, 150 = OFF | najniższy poziom, do którego się ściemnia | im więcej tym ciemniej
+byte dimming = 150;  // Dimming level (8-150)  8 = ON, 150 = OFF | the lowest level of dimming | bigger number = darker light
 byte dimmingMax = dimming;
-byte dimmingMin = 100; //8 has the brightest light| najwyższy poziom, do którego się rozjaśnia | im mniej tym jaśniej
+byte dimmingMin = 100; // 8 has the brightest light | the highest level of brightness | smaller number = brigther light
 int animationTime = 20;
 volatile byte bulbPinNumber;
-boolean bulbDirection; // true - liczy w górę | false - liczy w dół
+boolean bulbDirection; // true - count up | false - count down
 byte animationProgram = 4;
 boolean triggerFlag; 
 boolean setupMode; 
@@ -36,14 +36,12 @@ volatile int firstTrigger = 0;
 // stop settings
 
 /*
- * Programy:
- * 1) Wszystkie powoli się rozjaśniają i ściemniają | pętla zaczyna od zgaszonych żarówek
- * 2) Od lewej do prawej pojedyncza żarówka się rozjasnia i ściemnia | pętla zaczyna ponownie od lewej żarówki
- * 3) Od prawej do lewej pojedyncza żarówka się rozjasnia i ściemnia | pętla zaczyna ponownie od prawej żarówki
- * 4) Wszystkie powoli się rozjaśniają do pewnego poziomu i utrzymują go | brak pętli
- * 5) Od lewej do prawej jedna za drugą się rozjaśnia | pętla zaczyna ponownie od ostatnio ściemnionej żarówki
- * 
- * x) Sterowanie jasnością każdej żarówki pojedynczo
+ * Programs:
+ * 1) All bulbs lights up and dim in loop | loop begins from totally dimmed light
+ * 2) From left to right one after another every single bulb lights up and dim | loop begins again from left bulb
+ * 3) From right to left one after another every single bulb lights up and dim | loop begins again from right bulb
+ * 4) All bulbs lights up to defined by user level and they hold this state | no loop
+ * 5) From left to right one after another every single bulb lights up and dim | loop begins from last dimmed bulb
  */
 
 
@@ -79,9 +77,9 @@ void setup() {
 
 void loop() {
 
-  if (irrecv.decode(&results)) {
+  if (irrecv.decode(&results)) { // receive IR signal from TV remote controller
    
-    interruptOff();
+    interruptOff(); // switch off interrupt, it's collides with IR library
 
     //Serial.print("key decode: ");Serial.println(results.value);   
     
@@ -102,25 +100,25 @@ void loop() {
         animationProgram = 5;
       break; 
       case 3772833823:
-        changeBrightness(true); // max poziom jasności w górę
+        changeBrightness(true); // max level of brightness up max
       break; 
       case 3772829743:
-        changeBrightness(false); // max poziom jasności w dół
+        changeBrightness(false); // max level of brightness down
       break; 
       case 3772795063:
-        changeDimming(true); // max poziom ciemności w górę
+        changeDimming(true); // max level of dimming up
       break; 
       case 3772778743:
-        changeDimming(false); // max poziom ciemności w dół
+        changeDimming(false); // max level of dimming down
       break;
       case 3772778233:
-        changeAnimationTime(true); // prędkość animacji szybciej
+        changeAnimationTime(true); // animation speed faster
       break; 
       case 3772810873:
-        changeAnimationTime(false); // prędkość animacji wolniej
+        changeAnimationTime(false); // animation speed slower
       break; 
       case 3772782313:
-        setupMode = false; // zapamiętanie settings i wyjście z ustawień
+        setupMode = false; // save settings and exit from setup mode
       break;       
     }
 
@@ -140,12 +138,12 @@ void loop() {
 
     if (animationProgram >= 1 && animationProgram <= 3 || animationProgram == 5) {
   
-      for (int i=dimmingMax; i>=dimmingMin; i--) { // rozjasnianie
+      for (int i=dimmingMax; i>=dimmingMin; i--) { // brighter
         dimming = i;
         delay(animationTime);
       }
       
-      for (int i=dimmingMin; i<=dimmingMax; i++) { // sciemnianie
+      for (int i=dimmingMin; i<=dimmingMax; i++) { // darker
         dimming = i;
         delay(animationTime);
       } 
@@ -178,7 +176,7 @@ void loop() {
       
     } else if (animationProgram == 4 && triggerFlag) {
        
-      for (byte i=dimmingMax; i>=dimmingMin; i--) { // rozjasnianie
+      for (byte i=dimmingMax; i>=dimmingMin; i--) { // brightening
         dimming = i;
         delay(animationTime);
       }  
@@ -191,17 +189,14 @@ void loop() {
 
 
 void zeroCrosssInterrupt() {
-  // 500 najjasniej
-  // 8500 najciemniej, ledwo się żarzy
-  // 8000 bardzo ciemno, komfortowo dla oczu, ładnie wygląda
 
-  if ( bulbPinNumber == INTERRUPT_PIN ) { // zabezpieczenie, gdyby numer pinu wszedł na pin przerwania
+  if ( bulbPinNumber == INTERRUPT_PIN ) { // protection if bulb pin number goes to interrupt pin number
     bulbPinNumber = BULB_PIN_1;
   }
 
   delayMicroseconds(scaleDivider*dimming);
    
-  if (firstTrigger > 10) { // usunięcie błysku zaraz po uruchomieniu
+  if (firstTrigger > 10) { // remove bulb flash just after start when interrupt is attached
     fireTriac();
   } else {
     firstTrigger++;
