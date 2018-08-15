@@ -37,11 +37,11 @@ volatile int firstTrigger = 0;
 
 /*
  * Programs:
- * 1) All bulbs lights up and dim in loop | loop begins from totally dimmed light
- * 2) From left to right one after another every single bulb lights up and dim | loop begins again from left bulb
- * 3) From right to left one after another every single bulb lights up and dim | loop begins again from right bulb
- * 4) All bulbs lights up to defined by user level and they hold this state | no loop
- * 5) From left to right one after another every single bulb lights up and dim | loop begins from last dimmed bulb
+ * 1) All bulbs lights up and dims in loop | loop begins from totally dimmed light
+ * 2) From left to right one after another every single bulb lights up and dims | loop begins again from left bulb
+ * 3) From right to left one after another every single bulb lights up and dims | loop begins again from right bulb
+ * 4) All bulbs lights up to defined by a user level and holds this state | no loop
+ * 5) From left to right one after another every single bulb lights up and dims | loop begins from last dimmed bulb
  */
 
 
